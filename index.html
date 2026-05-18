@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>업무 종합 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg0:#0d0f1a;--bg1:#141624;--bg2:#1c1f32;--bg3:#242840;
+  --t1:#e8eaf6;--t2:#9ca3c8;--t3:#5b6186;
+  --blue:#4f8ef7;--green:#34d399;--red:#f87171;--yellow:#fbbf24;
+  --purple:#a78bfa;--cyan:#22d3ee;--orange:#fb923c;
+  --bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);
+  --sw:220px;--th:60px;
+}
+.lm{--bg0:#f0f2f8;--bg1:#e4e8f5;--bg2:#fff;--bg3:#f5f7ff;--t1:#1a1d2e;--t2:#4b5480;--t3:#9ba3cc;--bd:rgba(0,0,0,0.07);--bd2:rgba(0,0,0,0.13);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg0);color:var(--t1);font-size:13px;overflow-x:hidden;transition:background .3s,color .3s;}
+::-webkit-scrollbar{width:3px;height:3px;}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px;}
+
+/* TOPBAR */
+#tb{position:fixed;top:0;left:0;right:0;height:var(--th);background:var(--bg1);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:100;}
+.logo-area{display:flex;flex-direction:column;justify-content:center;flex-shrink:0;}
+.logo-title{font-size:13px;font-weight:700;color:var(--blue);line-height:1.2;}
+.logo-sub{font-size:10px;color:var(--t3);margin-top:2px;}
+#clk{font-size:10px;color:var(--t3);white-space:nowrap;flex-shrink:0;}
+.sum-cards{display:flex;gap:5px;margin:0 16px;}
+.sc{background:var(--bg3);border:1px solid var(--bd2);border-radius:8px;padding:5px 14px;cursor:pointer;text-align:center;min-width:76px;flex-shrink:0;transition:all .2s;}
+.sc:hover{border-color:var(--blue);transform:translateY(-1px);}
+.sc-lbl{font-size:10px;font-weight:500;color:var(--t2);white-space:nowrap;margin-bottom:2px;}
+.sc-val{font-size:18px;font-weight:700;line-height:1.1;}
+.ex-inline{display:flex;gap:12px;align-items:center;cursor:pointer;}
+.ex-inline span{font-size:11px;color:var(--t2);}
+.ex-inline b{color:var(--t1);}
+.tb-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
+.tb-sep{width:1px;height:20px;background:var(--bd);}
+.tb-btn{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:3px 10px;cursor:pointer;color:var(--t2);font-size:11px;font-family:inherit;transition:all .2s;}
+.tb-btn:hover{border-color:var(--blue);color:var(--blue);}
+.nb{position:relative;background:none;border:none;color:var(--t2);cursor:pointer;font-size:15px;padding:3px;}
+.nbadge{position:absolute;top:-1px;right:-1px;background:var(--red);color:#fff;font-size:9px;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+/* 알림 패널 */
+#notifPanel{display:none;position:fixed;top:calc(var(--th)+4px);right:12px;width:280px;background:var(--bg2);border:1px solid var(--bd2);border-radius:10px;z-index:150;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden;}
+.np-head{padding:10px 14px;border-bottom:1px solid var(--bd);font-size:12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+.np-close{font-size:10px;color:var(--blue);cursor:pointer;}
+.ni-item{padding:9px 14px;font-size:11px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s;}
+.ni-item:hover{background:var(--bg3);}
+.ni-item:last-child{border:none;}
+.ni-u{border-left:3px solid var(--red);padding-left:11px;}
+.ni-w{border-left:3px solid var(--yellow);padding-left:11px;}
+.ni-i{border-left:3px solid var(--blue);padding-left:11px;color:var(--t2);}
+
+/* SIDEBAR */
+#sb{position:fixed;top:var(--th);left:0;width:var(--sw);height:calc(100vh - var(--th));background:var(--bg1);border-right:1px solid var(--bd);display:flex;flex-direction:column;z-index:90;overflow-y:auto;transition:transform .3s;}
+.ss{padding:10px 8px 3px;font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;border-radius:7px;margin:1px 6px;color:var(--t2);transition:all .2s;font-size:12px;}
+.ni:hover,.ni.on{background:var(--bg3);color:var(--t1);}
+.ni.on{border-left:2px solid var(--blue);color:var(--blue);}
+.nbg{margin-left:auto;font-size:9px;padding:1px 5px;border-radius:8px;background:var(--red);color:#fff;}
+.nbg.g{background:var(--green);}.nbg.y{background:var(--yellow);color:#000;}
+
+/* MAIN */
+#mn{margin-left:var(--sw);margin-top:var(--th);padding:12px;min-height:calc(100vh - var(--th));}
+
+/* CARDS */
+.c{background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;transition:box-shadow .2s;margin-bottom:10px;}
+.c:hover{box-shadow:0 0 0 1px var(--bd2);}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.ct{font-size:11px;font-weight:500;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;}
+.ca{font-size:11px;color:var(--blue);cursor:pointer;white-space:nowrap;}
+
+/* GRIDS */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;}
+.g32{display:grid;grid-template-columns:3fr 2fr;gap:10px;margin-bottom:10px;}
+
+/* KPI */
+.kv{font-size:26px;font-weight:700;margin:4px 0 2px;}
+.kb{height:3px;background:var(--bd);border-radius:2px;margin-top:7px;overflow:hidden;}
+.kf{height:100%;border-radius:2px;}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+.dg{background:var(--green);}.dy{background:var(--yellow);}
+.dr{background:var(--red);animation:pu 1.5s infinite;}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ALERT */
+.alert{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;font-size:12px;}
+.atag{font-size:10px;background:rgba(248,113,113,.15);color:var(--red);padding:1px 7px;border-radius:12px;border:1px solid rgba(248,113,113,.25);}
+
+/* BRIEFING */
+.brief{background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(167,139,250,.05));border:1px solid rgba(79,142,247,.18);border-radius:10px;padding:11px 16px;margin-bottom:10px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
+.brief-sep{width:1px;background:var(--bd);align-self:stretch;flex-shrink:0;}
+
+/* TODO */
+.ti{display:flex;align-items:flex-start;gap:7px;padding:7px 0;border-bottom:1px solid var(--bd);}
+.ti:last-child{border:none;}
+.tc{width:15px;height:15px;border-radius:3px;border:1.5px solid var(--bd2);flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.tc.ok{background:var(--green);border-color:var(--green);}
+.tc.ok::after{content:'✓';font-size:9px;color:#fff;}
+.tt{font-size:12px;}.tt.dk{text-decoration:line-through;color:var(--t3);}
+.tm{display:flex;gap:5px;margin-top:2px;flex-wrap:wrap;}
+.tg{font-size:9px;padding:1px 5px;border-radius:10px;}
+.tg.ug{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.tg.pr{background:rgba(79,142,247,.12);color:var(--blue);border:1px solid rgba(79,142,247,.2);}
+.tg.dn2{background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.2);}
+.tg.dl{background:rgba(251,191,36,.12);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+.ta{display:flex;gap:6px;margin-top:8px;}
+.ta input{flex:1;background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;color:var(--t1);font-size:11px;font-family:inherit;outline:none;}
+.ta input:focus{border-color:var(--blue);}
+.ta button{background:var(--blue);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit;}
+
+/* CALENDAR */
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;}
+.cdh{text-align:center;font-size:9px;color:var(--t3);padding:3px 0;}
+.cd{text-align:center;font-size:11px;padding:4px 2px;border-radius:5px;cursor:pointer;position:relative;}
+.cd:hover{background:var(--bg3);}
+.cd.td{background:var(--blue);color:#fff;font-weight:700;}
+.cd.he::after{content:'';width:3px;height:3px;background:var(--yellow);border-radius:50%;position:absolute;bottom:1px;left:50%;transform:translateX(-50%);}
+.cd.om{color:var(--t3);}
+.evl{margin-top:8px;max-height:110px;overflow-y:auto;}
+.evi{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bd);font-size:11px;}
+.evi:last-child{border:none;}
+.evd{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+
+/* MILESTONE */
+.msi{margin-bottom:10px;}
+.msbar{height:5px;background:var(--bd);border-radius:3px;overflow:hidden;margin:4px 0;}
+.msf{height:100%;border-radius:3px;}
+.mph{display:flex;gap:3px;flex-wrap:wrap;}
+.ph{font-size:9px;padding:1px 5px;border-radius:8px;}
+.phd{background:rgba(52,211,153,.12);color:var(--green);}
+.php{background:rgba(79,142,247,.12);color:var(--blue);}
+.php2{background:rgba(107,114,128,.1);color:var(--t3);}
+
+/* DDAY */
+.ddg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.ddc{text-align:center;padding:8px 6px;background:var(--bg3);border-radius:7px;border:1px solid var(--bd);}
+.ddt{font-size:10px;color:var(--t2);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ddn{font-size:20px;font-weight:700;color:var(--blue);}
+.ddn.urg{color:var(--red);animation:pu 1.5s infinite;}
+.dds{font-size:9px;color:var(--t3);}
+
+/* SWOT */
+.swg{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.sw{border-radius:7px;padding:8px;}
+.swS{background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.18);}
+.swW{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.18);}
+.swO{background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.18);}
+.swT{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.18);}
+.swl{font-size:9px;font-weight:700;margin-bottom:5px;}
+.swS .swl{color:var(--green)}.swW .swl{color:var(--red)}.swO .swl{color:var(--blue)}.swT .swl{color:var(--yellow)}
+.swi{font-size:11px;color:var(--t2);padding:1px 0;}
+
+/* COMM */
+.mi2r{display:flex;gap:7px;padding:6px 0;border-bottom:1px solid var(--bd);align-items:flex-start;}
+.mi2r:last-child{border:none;}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.avb{background:rgba(79,142,247,.18);color:var(--blue);}
+.avg{background:rgba(52,211,153,.18);color:var(--green);}
+.avp{background:rgba(167,139,250,.18);color:var(--purple);}
+.avy{background:rgba(251,191,36,.18);color:var(--yellow);}
+.ms2{font-size:12px;font-weight:500;}.mt2{font-size:10px;color:var(--t2);margin-top:1px;}
+.mtime{font-size:9px;color:var(--t3);white-space:nowrap;}
+.unr{width:5px;height:5px;background:var(--blue);border-radius:50%;flex-shrink:0;margin-top:8px;}
+
+/* NEWS */
+.newsi{padding:7px 0;border-bottom:1px solid var(--bd);}
+.newsi:last-child{border:none;}
+.newst{font-size:12px;line-height:1.4;margin-top:3px;}
+.newsm{font-size:10px;color:var(--t3);margin-top:2px;}
+.ntag{font-size:9px;padding:1px 5px;border-radius:8px;}
+.nt1{background:rgba(248,113,113,.12);color:var(--red);}
+.nt2{background:rgba(79,142,247,.12);color:var(--blue);}
+.nt3{background:rgba(167,139,250,.12);color:var(--purple);}
+
+/* SUPPLY */
+.sup-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd);}
+.sup-row:last-child{border:none;}
+.sup-bar{flex:2;height:4px;background:var(--bd);border-radius:2px;overflow:hidden;}
+.sup-fill{height:100%;border-radius:2px;}
+.sbg{background:rgba(52,211,153,.12);color:var(--green);}
+.swbg{background:rgba(251,191,36,.12);color:var(--yellow);}
+.slbg{background:rgba(248,113,113,.12);color:var(--red);}
+.sup-badge{font-size:9px;padding:1px 5px;border-radius:8px;white-space:nowrap;}
+
+/* TRIP/VAC */
+.trip-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd);}
+.trip-row:last-child{border:none;}
+.ts{font-size:9px;padding:1px 6px;border-radius:8px;white-space:nowrap;}
+.ts-p{background:rgba(251,191,36,.12);color:var(--yellow);}
+.ts-a{background:rgba(52,211,153,.12);color:var(--green);}
+.vac-ov{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.vac-box{background:var(--bg3);border-radius:7px;padding:8px;text-align:center;border:1px solid var(--bd);}
+.vac-num{font-size:20px;font-weight:700;}.vac-lbl{font-size:9px;color:var(--t3);margin-top:2px;}
+.vac-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);}
+.vac-row:last-child{border:none;}
+.vac-bar{flex:2;height:4px;background:var(--bd);border-radius:2px;overflow:hidden;}
+.vac-fill{height:100%;background:var(--blue);border-radius:2px;}
+
+/* ROOM */
+.room-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;}
+.room-card{background:var(--bg3);border-radius:7px;padding:8px;border:1px solid var(--bd);}
+.room-name{font-size:11px;font-weight:500;margin-bottom:4px;}
+.room-cap{font-size:9px;color:var(--t3);margin-bottom:6px;}
+.slot{font-size:10px;padding:2px 6px;border-radius:4px;text-align:center;margin-bottom:2px;}
+.sf{background:rgba(52,211,153,.12);color:var(--green);}
+.sb{background:rgba(248,113,113,.1);color:var(--red);}
+.sm{background:rgba(79,142,247,.15);color:var(--blue);font-weight:500;}
+
+/* CARD ANALYSIS */
+.cptab{background:none;border:1px solid var(--bd);color:var(--t2);padding:4px 10px;border-radius:16px;cursor:pointer;font-size:11px;font-family:inherit;transition:all .2s;}
+.cptab:hover{border-color:var(--blue);color:var(--blue);}
+.cptab.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+/* BRANCH */
+.bbox{background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:6px 10px;font-size:10px;text-align:center;min-width:90px;}
+.bbox.root{border-color:var(--purple);color:var(--purple);}
+.bbox.suc{border-color:var(--green);}
+.bbox.rsk{border-color:var(--red);}
+.bpr{font-size:9px;margin-top:2px;}
+.bpr.hi{color:var(--green)}.bpr.lo{color:var(--red)}
+.bln{width:1px;height:14px;background:var(--bd);}
+
+/* REPORT */
+.rbar{display:flex;gap:4px;margin-bottom:4px;align-items:center;}
+.rbl{font-size:10px;color:var(--t2);width:30px;flex-shrink:0;}
+.rbt{flex:1;height:5px;background:var(--bd);border-radius:2px;overflow:hidden;}
+.rbf{height:100%;border-radius:2px;}
+
+/* 새 기능 탭 */
+.doc-tab{background:none;border:1px solid var(--bd);color:var(--t2);padding:4px 10px;border-radius:16px;cursor:pointer;font-size:11px;font-family:inherit;transition:all .2s;white-space:nowrap;}
+.doc-tab:hover{border-color:var(--blue);color:var(--blue);}
+.doc-tab.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+.rule-card{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.rule-card:hover{border-color:var(--blue);}
+.rule-title{font-size:12px;font-weight:500;margin-bottom:4px;}
+.rule-body{font-size:11px;color:var(--t2);line-height:1.7;display:none;margin-top:7px;white-space:pre-wrap;}
+.rule-card.open .rule-body{display:block;}
+.rtag{font-size:9px;padding:1px 6px;border-radius:8px;}
+.rt1{background:rgba(79,142,247,.12);color:var(--blue);}
+.rt2{background:rgba(52,211,153,.12);color:var(--green);}
+.rt3{background:rgba(251,191,36,.12);color:var(--yellow);}
+.rt4{background:rgba(167,139,250,.12);color:var(--purple);}
+.rt5{background:rgba(248,113,113,.12);color:var(--red);}
+
+/* FAB */
+#chatFab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;background:var(--blue);color:#fff;font-size:22px;z-index:300;box-shadow:0 4px 20px rgba(79,142,247,.5);transition:transform .2s;display:flex;align-items:center;justify-content:center;}
+#chatFab:hover{transform:scale(1.08);}
+#chatFabPanel{display:none;position:fixed;bottom:86px;right:24px;width:340px;height:440px;background:var(--bg1);border:1px solid var(--bd2);border-radius:14px;z-index:299;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+#chatFabPanel.open{display:flex;}
+.fab-ph{padding:11px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--bd);background:rgba(79,142,247,.07);flex-shrink:0;}
+.fab-icon{width:28px;height:28px;border-radius:8px;background:rgba(79,142,247,.2);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.fab-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px;background:var(--bg0);}
+.pm{max-width:88%;padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.6;word-break:keep-all;white-space:pre-wrap;}
+.pm.u{align-self:flex-end;background:var(--blue);color:#fff;border-radius:10px 10px 2px 10px;white-space:normal;}
+.pm.b{align-self:flex-start;background:var(--bg2);color:var(--t1);border-radius:10px 10px 10px 2px;border:1px solid var(--bd);}
+.fab-pre{padding:6px 10px;display:flex;gap:4px;flex-wrap:wrap;border-top:1px solid var(--bd);background:var(--bg1);flex-shrink:0;}
+.ppb{font-size:10px;padding:3px 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;cursor:pointer;color:var(--t2);white-space:nowrap;font-family:inherit;}
+.ppb:hover{border-color:var(--blue);color:var(--blue);}
+.fab-inp{padding:8px 10px;display:flex;gap:6px;border-top:1px solid var(--bd);background:var(--bg1);flex-shrink:0;}
+.fab-inp input{flex:1;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;color:var(--t1);font-size:12px;font-family:inherit;outline:none;}
+.fab-inp input:focus{border-color:var(--blue);}
+.fab-send{border:none;color:#fff;padding:7px 13px;border-radius:8px;cursor:pointer;font-size:13px;background:var(--blue);}
+
+/* MODAL */
+.mdl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center;}
+.mdl.op{display:flex;}
+.mbox{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:20px;width:340px;max-height:80vh;overflow-y:auto;}
+.mttl{font-size:14px;font-weight:600;margin-bottom:14px;}
+.mr{margin-bottom:8px;}.ml{font-size:10px;color:var(--t3);margin-bottom:3px;}
+.mi2{width:100%;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;padding:6px 8px;color:var(--t1);font-size:12px;font-family:inherit;outline:none;}
+.mi2:focus{border-color:var(--blue);}
+.mbtns{display:flex;justify-content:flex-end;gap:6px;margin-top:14px;}
+.mbtn{padding:6px 14px;border-radius:7px;cursor:pointer;font-size:11px;font-family:inherit;border:1px solid var(--bd);background:none;color:var(--t2);}
+.mbtn.p{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+@media(max-width:1100px){#sb{transform:translateX(-100%);}#sb.op{transform:translateX(0);}#mn{margin-left:0;}.g4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:680px){.g3,.g2,.g32{grid-template-columns:1fr;}.g4{grid-template-columns:1fr;}.sum-cards{display:none;}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="tb">
+  <button id="sbtog" style="display:none;background:none;border:none;color:var(--t2);font-size:16px;cursor:pointer;" onclick="document.getElementById('sb').classList.toggle('op')">☰</button>
+  <div class="logo-area">
+    <div class="logo-title">업무 종합 대시보드</div>
+    <div class="logo-sub">김민준 · 경영지원팀 사원</div>
+  </div>
+  <div id="clk"></div>
+  <div class="sum-cards">
+    <div class="sc" onclick="go('todo')"><div class="sc-lbl">진행 업무</div><div class="sc-val" style="color:var(--blue)" id="s-todo">-</div></div>
+    <div class="sc" onclick="go('trip')"><div class="sc-lbl">결재 대기</div><div class="sc-val" style="color:var(--yellow)">5</div></div>
+    <div class="sc" onclick="go('todo')"><div class="sc-lbl">D-1 임박</div><div class="sc-val" style="color:var(--red)" id="s-d1">-</div></div>
+    <div class="sc" onclick="go('comm')"><div class="sc-lbl">금주 완료</div><div class="sc-val" style="color:var(--green)">18</div></div>
+    <div class="sc" onclick="go('vac')"><div class="sc-lbl">연차 잔여</div><div class="sc-val" style="color:var(--purple)">15<span style="font-size:10px">일</span></div></div>
+    <div class="sc" onclick="go('comm')"><div class="sc-lbl">미확인 메일</div><div class="sc-val" style="color:var(--orange)">24</div></div>
+  </div>
+  <div class="tb-right">
+    <div class="ex-inline" onclick="go('news')">
+      <span>USD <b>1,320</b> <span style="color:var(--red);font-size:10px">▲2.3</span></span>
+      <span>EUR <b>1,426</b> <span style="color:var(--blue);font-size:10px">▼1.1</span></span>
+      <span>JPY <b>892</b> <span style="color:var(--red);font-size:10px">▲5.0</span></span>
+      <span>CNY <b>181</b> <span style="color:var(--blue);font-size:10px">▼0.8</span></span>
+    </div>
+    <div class="tb-sep"></div>
+    <button class="nb" onclick="toggleNotif()"><span>🔔</span><span class="nbadge">7</span></button>
+    <button class="tb-btn" onclick="toggleTheme()" id="tbtn">☀ 라이트</button>
+  </div>
+</div>
+
+<!-- 알림 패널 -->
+<div id="notifPanel">
+  <div class="np-head">🔔 알림 <span class="np-close" onclick="toggleNotif()">닫기</span></div>
+  <div class="ni-item ni-u">📋 예산보고서 마감 <b>D-2</b></div>
+  <div class="ni-item ni-u">📦 토너 카트리지 재고 부족</div>
+  <div class="ni-item ni-w">✈ 출장 승인 대기 2건</div>
+  <div class="ni-item ni-w">📊 SLA 준수율 61% 미달</div>
+  <div class="ni-item ni-i">📧 미확인 메일 5통</div>
+  <div class="ni-item ni-i">🏖 휴가 신청 승인 대기 1건</div>
+  <div class="ni-item ni-i">🏢 오늘 13:00 소회의실A 주간회의</div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sb">
+  <div class="ss">핵심 업무</div>
+  <div class="ni on" onclick="go('kpi')">📊 KPI 현황</div>
+  <div class="ni" onclick="go('todo')">✅ 할 일 목록 <span class="nbg" id="tdBadge">4</span></div>
+  <div class="ni" onclick="go('cal')">📅 일정 캘린더</div>
+  <div class="ni" onclick="go('ms')">📋 마일스톤</div>
+  <div class="ss">업무 신청</div>
+  <div class="ni" onclick="go('vac')">🏖 휴가 현황 <span class="nbg g">15일</span></div>
+  <div class="ni" onclick="go('trip')">✈ 출장 신청 <span class="nbg y">2</span></div>
+  <div class="ni" onclick="go('sup')">📦 비품 관리 <span class="nbg">부족2</span></div>
+  <div class="ni" onclick="go('room')">🏢 회의실 예약</div>
+  <div class="ss">도구</div>
+  <div class="ni" onclick="go('doc-section')">📋 결재 문서 템플릿</div>
+  <div class="ni" onclick="go('rule-section')">🔍 사내 규정 검색</div>
+  <div class="ni" onclick="go('weekly-section')">📅 주간업무계획서</div>
+  <div class="ss">분석 · 정보</div>
+  <div class="ni" onclick="go('card')">💳 법인카드 분석</div>
+  <div class="ni" onclick="go('news')">📰 뉴스·환율</div>
+  <div class="ni" onclick="go('comm')">💬 소통 패널 <span class="nbg" id="msgBadge">5</span></div>
+</div>
+
+<!-- MAIN -->
+<div id="mn">
+
+<!-- ALERT -->
+<div class="alert">
+  <span style="font-size:16px">⚠</span>
+  <div>
+    <div style="font-weight:500;margin-bottom:4px;font-size:12px">주의 필요 항목</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <span class="atag">예산보고서 D-2</span><span class="atag">비품재고 부족 2종</span>
+      <span class="atag">출장 승인 대기 2건</span><span class="atag">SLA 61% 미달</span>
+    </div>
+  </div>
+</div>
+
+<!-- 오늘의 브리핑 -->
+<div class="brief">
+  <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px">최우선 업무</div><div style="font-size:13px;font-weight:600">📋 계약서 검토 및 날인 <span style="color:var(--red);font-size:11px">D-1</span></div></div>
+  <div class="brief-sep"></div>
+  <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px">오늘 일정</div><div style="font-size:12px">🕑 14:00 팀 주간회의 (소회의실A)</div></div>
+  <div class="brief-sep"></div>
+  <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px">이번 주 마감</div>
+    <div style="display:flex;gap:6px">
+      <span style="font-size:11px;background:rgba(248,113,113,.12);color:var(--red);padding:1px 7px;border-radius:10px;">예산보고서 D-2</span>
+      <span style="font-size:11px;background:rgba(251,191,36,.12);color:var(--yellow);padding:1px 7px;border-radius:10px;">성과보고서 D-5</span>
+    </div>
+  </div>
+  <div class="brief-sep"></div>
+  <div style="margin-left:auto;text-align:right"><div style="font-size:10px;color:var(--t3);margin-bottom:2px">날씨 · 서울</div><div style="font-size:12px">☀ 22°C · 맑음</div></div>
+</div>
+
+<!-- KPI -->
+<div id="kpi" class="g4" style="margin-bottom:10px">
+  <div class="c" style="margin-bottom:0"><div class="ch"><span class="ct">업무 완료율</span><span class="dot dy"></span></div><div class="kv" style="color:var(--yellow)">73<small style="font-size:13px">%</small></div><div style="font-size:10px;margin-top:3px"><span style="color:var(--green)">▲5.2%</span> <span style="color:var(--t3)">전주比</span></div><div class="kb"><div class="kf" style="width:73%;background:var(--yellow)"></div></div></div>
+  <div class="c" style="margin-bottom:0"><div class="ch"><span class="ct">평균 처리시간</span><span class="dot dg"></span></div><div class="kv" style="color:var(--green)">2.4<small style="font-size:13px">h</small></div><div style="font-size:10px;margin-top:3px"><span style="color:var(--green)">▼0.3h</span> <span style="color:var(--t3)">개선</span></div><div class="kb"><div class="kf" style="width:85%;background:var(--green)"></div></div></div>
+  <div class="c" style="margin-bottom:0"><div class="ch"><span class="ct">품질 점수</span><span class="dot dg"></span></div><div class="kv" style="color:var(--blue)">92<small style="font-size:13px">점</small></div><div style="font-size:10px;margin-top:3px"><span style="color:var(--green)">▲3점</span> <span style="color:var(--t3)">목표 90점</span></div><div class="kb"><div class="kf" style="width:92%;background:var(--blue)"></div></div></div>
+  <div class="c" style="margin-bottom:0"><div class="ch"><span class="ct">SLA 준수율</span><span class="dot dr"></span></div><div class="kv" style="color:var(--red)">61<small style="font-size:13px">%</small></div><div style="font-size:10px;margin-top:3px"><span style="color:var(--red)">▼8%</span> <span style="color:var(--t3)">목표 80%</span></div><div class="kb"><div class="kf" style="width:61%;background:var(--red)"></div></div></div>
+</div>
+
+<!-- MILESTONE + CALENDAR -->
+<div id="ms" class="g2">
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">📊 프로젝트 마일스톤</span></div>
+  <div class="msi"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:12px;font-weight:500">연간 예산 계획 수립</span><span style="font-size:10px;color:var(--t3)">D-12</span></div><div class="msbar"><div class="msf" style="width:68%;background:var(--blue)"></div></div><div style="display:flex;justify-content:space-between"><div class="mph"><span class="ph phd">현황분석</span><span class="ph phd">부서협의</span><span class="ph php">초안작성</span><span class="ph php2">최종확정</span></div><span style="font-size:10px;color:var(--t3)">68%</span></div></div>
+  <div class="msi"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:12px;font-weight:500">사무환경 개선</span><span style="font-size:10px;color:var(--t3)">D-28</span></div><div class="msbar"><div class="msf" style="width:45%;background:var(--green)"></div></div><div style="display:flex;justify-content:space-between"><div class="mph"><span class="ph phd">수요조사</span><span class="ph php">견적검토</span><span class="ph php2">계약</span><span class="ph php2">설치</span></div><span style="font-size:10px;color:var(--t3)">45%</span></div></div>
+  <div class="msi"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:12px;font-weight:500">하반기 성과보고서</span><span style="font-size:10px;color:var(--red)">D-5 ⚠</span></div><div class="msbar"><div class="msf" style="width:82%;background:var(--yellow)"></div></div><div style="display:flex;justify-content:space-between"><div class="mph"><span class="ph phd">데이터수집</span><span class="ph phd">분석</span><span class="ph php">보고서작성</span><span class="ph php2">승인</span></div><span style="font-size:10px;color:var(--t3)">82%</span></div></div>
+</div>
+<div id="cal" class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">📅 일정 관리</span>
+    <div style="display:flex;gap:4px;align-items:center;">
+      <button style="background:none;border:none;color:var(--t2);cursor:pointer;font-size:14px;" id="calPrev">‹</button>
+      <span id="calMon" style="font-size:11px;font-weight:500;min-width:64px;text-align:center;"></span>
+      <button style="background:none;border:none;color:var(--t2);cursor:pointer;font-size:14px;" id="calNext">›</button>
+      <span class="ca" onclick="openMdl('evMdl')">+ 추가</span>
+    </div>
+  </div>
+  <div class="cg" style="margin-bottom:4px"><div class="cdh">일</div><div class="cdh">월</div><div class="cdh">화</div><div class="cdh">수</div><div class="cdh">목</div><div class="cdh">금</div><div class="cdh">토</div></div>
+  <div class="cg" id="calCells"></div>
+  <div class="evl" id="evList"></div>
+</div>
+</div>
+
+<!-- TODO + DDAY -->
+<div id="todo" class="g32">
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">✅ 할 일 목록</span><span class="ca" id="sortBtn">↑↓ 정렬</span></div>
+  <div id="tdList"></div>
+  <div class="ta"><input type="text" id="tdInp" placeholder="새 할 일 입력 후 Enter..."><button id="tdDetailBtn">상세</button></div>
+</div>
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">⏱ D-Day</span><span class="ca" onclick="openMdl('ddMdl')">+ 추가</span></div>
+  <div class="ddg" id="ddGrid"></div>
+</div>
+</div>
+
+<!-- VAC + TRIP -->
+<div id="vac" class="g2">
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">🏖 휴가 현황</span><span class="ca" onclick="openMdl('vacMdl')">신청하기</span></div>
+  <div class="vac-ov">
+    <div class="vac-box"><div class="vac-num" style="color:var(--blue)">15</div><div class="vac-lbl">잔여 연차</div></div>
+    <div class="vac-box"><div class="vac-num" style="color:var(--green)">6</div><div class="vac-lbl">사용 연차</div></div>
+    <div class="vac-box"><div class="vac-num" style="color:var(--yellow)">1</div><div class="vac-lbl">승인 대기</div></div>
+  </div>
+  <div class="vac-row"><span style="flex:1;font-size:12px">나 (김민준)</span><div class="vac-bar"><div class="vac-fill" style="width:29%"></div></div><span style="font-size:10px;color:var(--t2)">6/21일</span></div>
+  <div class="vac-row"><span style="flex:1;font-size:12px">이수진 대리</span><div class="vac-bar"><div class="vac-fill" style="width:57%"></div></div><span style="font-size:10px;color:var(--t2)">12/21일</span></div>
+  <div class="vac-row"><span style="flex:1;font-size:12px">박철호 과장</span><div class="vac-bar"><div class="vac-fill" style="width:43%"></div></div><span style="font-size:10px;color:var(--t2)">9/21일</span></div>
+  <div class="vac-row"><span style="flex:1;font-size:12px">최유나 사원</span><div class="vac-bar"><div class="vac-fill" style="width:14%"></div></div><span style="font-size:10px;color:var(--t2)">3/21일</span></div>
+</div>
+<div id="trip" class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">✈ 출장 신청</span><span class="ca" onclick="openMdl('tripMdl')">+ 신청</span></div>
+  <div class="trip-row"><div class="av avb">나</div><div style="flex:1"><div style="font-size:12px;font-weight:500">김민준</div><div style="font-size:11px;color:var(--t2)">부산 — 협력사 현장실사</div></div><div style="font-size:10px;color:var(--t3)">5/22~23</div><div class="ts ts-p">승인대기</div></div>
+  <div class="trip-row"><div class="av avy">박</div><div style="flex:1"><div style="font-size:12px;font-weight:500">박철호 과장</div><div style="font-size:11px;color:var(--t2)">서울 — 본사 회의</div></div><div style="font-size:10px;color:var(--t3)">5/20~21</div><div class="ts ts-p">승인대기</div></div>
+  <div class="trip-row"><div class="av avg">이</div><div style="flex:1"><div style="font-size:12px;font-weight:500">이수진 대리</div><div style="font-size:11px;color:var(--t2)">대구 — 거래처 계약</div></div><div style="font-size:10px;color:var(--t3)">5/12~13</div><div class="ts ts-a">승인완료</div></div>
+</div>
+</div>
+
+<!-- SUPPLY + ROOM -->
+<div id="sup" class="g2">
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">📦 비품 재고</span><span class="ca" onclick="openMdl('supMdl')">+ 발주</span></div>
+  <div class="sup-row"><span style="flex:1;font-size:12px">A4 용지</span><div class="sup-bar"><div class="sup-fill" style="width:75%;background:var(--green)"></div></div><span style="font-size:10px;color:var(--t2);min-width:55px;text-align:right">15/20박스</span><span class="sup-badge sbg">정상</span></div>
+  <div class="sup-row"><span style="flex:1;font-size:12px">볼펜</span><div class="sup-bar"><div class="sup-fill" style="width:30%;background:var(--yellow)"></div></div><span style="font-size:10px;color:var(--t2);min-width:55px;text-align:right">3/10다스</span><span class="sup-badge swbg">주의</span></div>
+  <div class="sup-row"><span style="flex:1;font-size:12px">토너 카트리지</span><div class="sup-bar"><div class="sup-fill" style="width:10%;background:var(--red)"></div></div><span style="font-size:10px;color:var(--t2);min-width:55px;text-align:right">1/10개</span><span class="sup-badge slbg">부족⚠</span></div>
+  <div class="sup-row"><span style="flex:1;font-size:12px">스테이플러 침</span><div class="sup-bar"><div class="sup-fill" style="width:90%;background:var(--green)"></div></div><span style="font-size:10px;color:var(--t2);min-width:55px;text-align:right">9/10통</span><span class="sup-badge sbg">정상</span></div>
+  <div class="sup-row"><span style="flex:1;font-size:12px">포스트잇</span><div class="sup-bar"><div class="sup-fill" style="width:15%;background:var(--red)"></div></div><span style="font-size:10px;color:var(--t2);min-width:55px;text-align:right">2/12팩</span><span class="sup-badge slbg">부족⚠</span></div>
+</div>
+<div id="room" class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">🏢 회의실 예약</span><span class="ca" onclick="openMdl('roomMdl')">+ 예약</span></div>
+  <div class="room-grid">
+    <div class="room-card"><div class="room-name">소회의실 A</div><div class="room-cap">👥 최대 6명</div><div class="slot sb">09:00 박과장팀</div><div class="slot sm">13:00 팀 주간회의</div><div class="slot sf">15:00 예약 가능</div></div>
+    <div class="room-card"><div class="room-name">대회의실 B</div><div class="room-cap">👥 최대 20명</div><div class="slot sf">09:00 예약 가능</div><div class="slot sb">11:00 경영기획팀</div><div class="slot sb">14:00 임원회의</div></div>
+    <div class="room-card"><div class="room-name">화상회의실</div><div class="room-cap">👥 최대 8명</div><div class="slot sb">10:00 이대리팀</div><div class="slot sf">13:00 예약 가능</div><div class="slot sf">15:00 예약 가능</div></div>
+  </div>
+  <div style="font-size:10px;color:var(--t2)"><span style="color:var(--blue)">■</span> 내 예약 <span style="color:var(--red)">■</span> 사용중 <span style="color:var(--green)">■</span> 가능</div>
+</div>
+</div>
+
+<!-- ══ 결재 문서 템플릿 ══ -->
+<div id="doc-section" class="c">
+  <div class="ch"><span class="ct">📋 결재 문서 템플릿</span>
+    <div style="display:flex;gap:6px">
+      <button id="docCopyBtn" onclick="copyDoc()" style="display:none;background:var(--green);border:none;color:#fff;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">📋 복사</button>
+      <button id="docPrintBtn" onclick="printDoc()" style="display:none;background:var(--blue);border:none;color:#fff;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">🖨 출력</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="doc-tab on" onclick="selectDocTpl('기안서',this)">📄 기안서</button>
+    <button class="doc-tab" onclick="selectDocTpl('품의서',this)">📝 품의서</button>
+    <button class="doc-tab" onclick="selectDocTpl('출장신청서',this)">✈ 출장신청서</button>
+    <button class="doc-tab" onclick="selectDocTpl('휴가신청서',this)">🏖 휴가신청서</button>
+    <button class="doc-tab" onclick="selectDocTpl('비품신청서',this)">📦 비품신청서</button>
+  </div>
+  <div id="docForm" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+  <div id="docPreview" style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:14px;font-size:12px;line-height:1.9;white-space:pre-wrap;min-height:120px;color:var(--t1);font-family:'Noto Sans KR',sans-serif"></div>
+</div>
+
+<!-- ══ 사내 규정 검색 ══ -->
+<div id="rule-section" class="c">
+  <div class="ch"><span class="ct">🔍 사내 규정 검색</span></div>
+  <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+    <input id="ruleInp" class="mi2" placeholder="키워드 검색... (연차, 출장, 경비 등)" oninput="renderRules(this.value)" style="flex:1;min-width:160px">
+  </div>
+  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px" id="ruleCats"></div>
+  <div id="ruleList"></div>
+</div>
+
+<!-- ══ 주간업무계획서 ══ -->
+<div id="weekly-section" class="c">
+  <div class="ch"><span class="ct">📅 주간업무계획서</span>
+    <div style="display:flex;gap:6px">
+      <button onclick="genWeekly()" style="background:var(--blue);border:none;color:#fff;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">⚡ 자동 생성</button>
+      <button id="wCopyBtn" onclick="copyWeekly()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--t2);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">📋 복사</button>
+    </div>
+  </div>
+  <div style="margin-bottom:10px">
+    <div style="font-size:10px;color:var(--t3);margin-bottom:4px">특이사항 / 추가 업무</div>
+    <textarea id="weeklyExtra" class="mi2" rows="2" placeholder="예: 월요일 부서장 보고, 수요일 협력사 미팅..." style="resize:none;width:100%"></textarea>
+  </div>
+  <div id="weeklyOut" style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:14px;font-size:12px;line-height:2;white-space:pre-wrap;min-height:100px;color:var(--t1)"></div>
+</div>
+
+<!-- 법인카드 분석 -->
+<div id="card" class="c">
+  <div class="ch"><span class="ct">💳 법인카드 사용 내역 분석</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select id="cardPeriod" class="mi2" style="width:auto;padding:3px 8px;font-size:11px">
+        <option value="month">1월 (월간)</option>
+        <option value="quarter">1분기 (분기별)</option>
+        <option value="year">2024년 (연간)</option>
+      </select>
+      <button onclick="loadSample()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--t2);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">📊 샘플 보기</button>
+      <button onclick="document.getElementById('cardFileInp').click()" style="background:var(--blue);border:none;color:#fff;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">📂 파일 업로드</button>
+      <input type="file" id="cardFileInp" accept=".jpg,.jpeg,.png,.pdf,.xls,.xlsx" style="display:none">
+    </div>
+  </div>
+  <div id="cardResults">
+    <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--bd);padding-bottom:8px;flex-wrap:wrap">
+      <button class="cptab on" id="tab-sum" onclick="showCardTab('sum',this)">📊 요약</button>
+      <button class="cptab" id="tab-cat" onclick="showCardTab('cat',this)">🏷 카테고리</button>
+      <button class="cptab" id="tab-trend" onclick="showCardTab('trend',this)">📈 추이</button>
+      <button class="cptab" id="tab-insight" onclick="showCardTab('insight',this)">💡 인사이트</button>
+    </div>
+    <div id="tab-sum-panel">
+      <div class="g4" style="margin-bottom:10px">
+        <div style="background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--bd);text-align:center"><div style="font-size:9px;color:var(--t3);margin-bottom:3px">총 사용액</div><div id="cTotalAmt" style="font-size:18px;font-weight:700;color:var(--blue)">-</div></div>
+        <div style="background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--bd);text-align:center"><div style="font-size:9px;color:var(--t3);margin-bottom:3px">건수</div><div id="cTotalCnt" style="font-size:18px;font-weight:700;color:var(--green)">-</div></div>
+        <div style="background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--bd);text-align:center"><div style="font-size:9px;color:var(--t3);margin-bottom:3px">건당 평균</div><div id="cAvgAmt" style="font-size:18px;font-weight:700;color:var(--purple)">-</div></div>
+        <div style="background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--bd);text-align:center"><div style="font-size:9px;color:var(--t3);margin-bottom:3px">최고 단건</div><div id="cMaxAmt" style="font-size:18px;font-weight:700;color:var(--orange)">-</div></div>
+      </div>
+      <div id="cTopList"></div>
+    </div>
+    <div id="tab-cat-panel" style="display:none"><div style="position:relative;height:200px;margin-bottom:10px"><canvas id="cardCatChart"></canvas></div><div id="catLegend" style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;justify-content:center"></div></div>
+    <div id="tab-trend-panel" style="display:none"><div style="position:relative;height:200px"><canvas id="cardTrendChart"></canvas></div></div>
+    <div id="tab-insight-panel" style="display:none"><div id="cardInsightBox" style="font-size:12px;line-height:1.8;white-space:pre-wrap;background:var(--bg3);border-radius:8px;padding:12px;border:1px solid var(--bd)"></div></div>
+  </div>
+</div>
+
+<!-- SWOT + BRANCH -->
+<div id="swot" class="g2">
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">♟ SWOT 분석</span></div>
+  <div class="swg">
+    <div class="sw swS"><div class="swl">S — 강점</div><div class="swi">· 체계적 업무 프로세스</div><div class="swi">· 품질 점수 92점 달성</div><div class="swi">· 팀 커뮤니케이션 원활</div></div>
+    <div class="sw swW"><div class="swl">W — 약점</div><div class="swi">· SLA 준수율 61% 저조</div><div class="swi">· 행정 병목 구간 존재</div><div class="swi">· 디지털 전환 역량 부족</div></div>
+    <div class="sw swO"><div class="swl">O — 기회</div><div class="swi">· RPA 도입 자동화 가능</div><div class="swi">· AI 업무 보조 확대</div><div class="swi">· 정부 디지털 혁신 지원</div></div>
+    <div class="sw swT"><div class="swl">T — 위협</div><div class="swi">· 예산보고서 마감 D-2</div><div class="swi">· SLA 실패 리스크</div><div class="swi">· 비품 재고 부족 2종</div></div>
+  </div>
+</div>
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">🔀 의사결정 시나리오</span></div>
+  <div style="font-size:10px;color:var(--t3);margin-bottom:8px">📌 SLA 준수율 개선 방안</div>
+  <div style="display:flex;flex-direction:column;align-items:center">
+    <div class="bbox root">SLA 61%<br><small style="color:var(--t3)">조치 필요</small></div>
+    <div class="bln"></div>
+    <div style="display:flex;gap:20px">
+      <div style="display:flex;flex-direction:column;align-items:center"><div style="font-size:9px;color:var(--t3);margin-bottom:3px">인력 보강</div><div class="bbox" style="border-color:var(--blue)">계약직 채용<br><small class="bpr hi">성공 75%</small></div><div class="bln"></div><div style="display:flex;gap:8px"><div class="bbox suc" style="font-size:9px;min-width:70px">SLA 85%↑<br><small class="bpr hi">+24%p</small></div><div class="bbox rsk" style="font-size:9px;min-width:70px">예산초과<br><small class="bpr lo">위험 30%</small></div></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center"><div style="font-size:9px;color:var(--t3);margin-bottom:3px">프로세스</div><div class="bbox" style="border-color:var(--purple)">RPA 도입<br><small class="bpr hi">성공 68%</small></div><div class="bln"></div><div style="display:flex;gap:8px"><div class="bbox suc" style="font-size:9px;min-width:70px">SLA 80%<br><small class="bpr hi">6개월내</small></div><div class="bbox rsk" style="font-size:9px;min-width:70px">도입지연<br><small class="bpr lo">위험 35%</small></div></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- NEWS + EXCHANGE -->
+<div id="news" class="g3">
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">📰 뉴스·핫이슈</span></div>
+  <div class="newsi"><div><span class="ntag nt1">긴급</span></div><div class="newst">정부, 행정 디지털 전환 예산 2조원 배정 확정</div><div class="newsm">기획재정부 · 2시간 전</div></div>
+  <div class="newsi"><div><span class="ntag nt3">기술</span></div><div class="newst">공공기관 AI 도입 가이드라인 발표… 행정업무 자동화 본격화</div><div class="newsm">행정안전부 · 4시간 전</div></div>
+  <div class="newsi"><div><span class="ntag nt2">일반</span></div><div class="newst">기업 행정 효율화 우수사례 공모전, 우수기업 포상 예정</div><div class="newsm">중소벤처기업부 · 6시간 전</div></div>
+</div>
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">💱 환율 현황</span><span style="font-size:9px;color:var(--t3)">2026-05-18 기준</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div style="background:var(--bg3);border-radius:7px;padding:8px;border:1px solid var(--bd)"><div style="font-size:9px;color:var(--t3)">USD/KRW</div><div style="font-size:17px;font-weight:700">1,320.50</div><div style="font-size:10px;color:var(--red)">▲2.30 (+0.17%)</div></div>
+    <div style="background:var(--bg3);border-radius:7px;padding:8px;border:1px solid var(--bd)"><div style="font-size:9px;color:var(--t3)">EUR/KRW</div><div style="font-size:17px;font-weight:700">1,425.80</div><div style="font-size:10px;color:var(--blue)">▼1.10 (-0.08%)</div></div>
+    <div style="background:var(--bg3);border-radius:7px;padding:8px;border:1px solid var(--bd)"><div style="font-size:9px;color:var(--t3)">JPY/KRW</div><div style="font-size:17px;font-weight:700">892.00</div><div style="font-size:10px;color:var(--red)">▲5.00 (+0.56%)</div></div>
+    <div style="background:var(--bg3);border-radius:7px;padding:8px;border:1px solid var(--bd)"><div style="font-size:9px;color:var(--t3)">CNY/KRW</div><div style="font-size:17px;font-weight:700">181.40</div><div style="font-size:10px;color:var(--blue)">▼0.80 (-0.44%)</div></div>
+  </div>
+</div>
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">📈 주간 KPI 추이</span></div>
+  <div style="position:relative;height:140px"><canvas id="kpiChart"></canvas></div>
+  <div style="display:flex;gap:10px;margin-top:6px;justify-content:center;font-size:10px;color:var(--t2)">
+    <span><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#4f8ef7;margin-right:3px"></span>완료율</span>
+    <span><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#34d399;margin-right:3px"></span>품질</span>
+    <span><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#f87171;margin-right:3px"></span>SLA</span>
+  </div>
+</div>
+</div>
+
+<!-- COMM -->
+<div id="comm" class="g3" style="margin-bottom:80px">
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">💬 Slack 공지</span><span class="nbg" style="font-size:9px;padding:1px 5px">2</span></div>
+  <div class="mi2r"><div class="unr"></div><div class="av avb">총무</div><div style="flex:1"><div class="ms2">#공지채널</div><div class="mt2">5월 급여명세서 발송 완료.</div></div><div class="mtime">10:30</div></div>
+  <div class="mi2r"><div class="unr"></div><div class="av avg">인사</div><div style="flex:1"><div class="ms2">#인사팀</div><div class="mt2">6월 교육훈련 일정 공유.</div></div><div class="mtime">09:15</div></div>
+  <div class="mi2r"><div style="width:5px;flex-shrink:0"></div><div class="av avp">팀장</div><div style="flex:1"><div class="ms2">#기획팀</div><div class="mt2">금요일 주간회의 오후 2시 변경.</div></div><div class="mtime">어제</div></div>
+</div>
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">📧 공용 메일함</span><span class="nbg" style="font-size:9px;padding:1px 5px">5</span></div>
+  <div class="mi2r"><div class="unr"></div><div class="av avy">외부</div><div style="flex:1"><div class="ms2">김부장 (협력사A)</div><div class="mt2"><span style="color:var(--red)">⚑ 긴급</span> 계약서 검토 요청</div></div><div class="mtime">08:45</div></div>
+  <div class="mi2r"><div class="unr"></div><div class="av avb">재무</div><div style="flex:1"><div class="ms2">이과장 (재무팀)</div><div class="mt2">5월 비용정산 내역 확인 요청</div></div><div class="mtime">어제</div></div>
+  <div class="mi2r"><div class="unr"></div><div class="av avg">관리</div><div style="flex:1"><div class="ms2">박대리 (총무팀)</div><div class="mt2">사무용품 발주 승인 요청</div></div><div class="mtime">어제</div></div>
+</div>
+<div class="c" style="margin-bottom:0">
+  <div class="ch"><span class="ct">📊 업무 리포트</span></div>
+  <div class="g4" style="margin-bottom:8px">
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--green)">18</div><div style="font-size:9px;color:var(--t3)">완료</div></div>
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--blue)">2.4h</div><div style="font-size:9px;color:var(--t3)">처리시간</div></div>
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--yellow)">73%</div><div style="font-size:9px;color:var(--t3)">완료율</div></div>
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--purple)">92점</div><div style="font-size:9px;color:var(--t3)">품질</div></div>
+  </div>
+  <div class="rbar"><span class="rbl">월</span><div class="rbt"><div class="rbf" style="width:90%;background:var(--blue)"></div></div><span style="font-size:10px;color:var(--t3);margin-left:4px">9건</span></div>
+  <div class="rbar"><span class="rbl">화</span><div class="rbt"><div class="rbf" style="width:50%;background:var(--blue)"></div></div><span style="font-size:10px;color:var(--t3);margin-left:4px">5건</span></div>
+  <div class="rbar"><span class="rbl">수</span><div class="rbt"><div class="rbf" style="width:30%;background:var(--blue)"></div></div><span style="font-size:10px;color:var(--t3);margin-left:4px">3건</span></div>
+  <div class="rbar"><span class="rbl">목</span><div class="rbt"><div class="rbf" style="width:10%;background:var(--yellow)"></div></div><span style="font-size:10px;color:var(--t3);margin-left:4px">1건</span></div>
+</div>
+</div>
+
+</div><!-- /main -->
+
+<!-- FAB -->
+<button id="chatFab" onclick="toggleFab()" title="빠른 메모">📝</button>
+<div id="chatFabPanel">
+  <div class="fab-ph">
+    <div class="fab-icon">📝</div>
+    <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--blue)">빠른 메모</div><div style="font-size:9px;color:var(--t3);margin-top:1px">localStorage 자동 저장</div></div>
+    <button onclick="toggleFab()" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:17px;margin-left:6px;">✕</button>
+  </div>
+  <div class="fab-msgs" id="quickMemoList"></div>
+  <div class="fab-inp">
+    <input type="text" id="quickMemoInp" placeholder="메모 입력 후 Enter..." onkeydown="if(event.key==='Enter')addQuickMemo()">
+    <button class="fab-send" onclick="addQuickMemo()">+</button>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="mdl" id="tdMdl"><div class="mbox"><div class="mttl">할 일 추가</div><div class="mr"><div class="ml">제목</div><input class="mi2" id="mTdTit" placeholder="내용 입력"></div><div class="mr"><div class="ml">긴급도 1-5</div><input class="mi2" type="number" id="mTdUrg" min="1" max="5" value="3"></div><div class="mr"><div class="ml">영향도 1-5</div><input class="mi2" type="number" id="mTdImp" min="1" max="5" value="3"></div><div class="mr"><div class="ml">마감일</div><input class="mi2" type="date" id="mTdDt"></div><div class="mr"><div class="ml">상태</div><select class="mi2" id="mTdSt"><option>진행중</option><option>긴급</option><option>지연</option></select></div><div class="mbtns"><button class="mbtn" onclick="closeMdl('tdMdl')">취소</button><button class="mbtn p" onclick="saveTdModal()">추가</button></div></div></div>
+<div class="mdl" id="evMdl"><div class="mbox"><div class="mttl">일정 추가</div><div class="mr"><div class="ml">제목</div><input class="mi2" id="mEvTit" placeholder="일정 제목"></div><div class="mr"><div class="ml">날짜</div><input class="mi2" type="date" id="mEvDt"></div><div class="mr"><div class="ml">카테고리</div><select class="mi2" id="mEvCat"><option value="team">팀</option><option value="personal">개인</option><option value="external">외부</option></select></div><div class="mbtns"><button class="mbtn" onclick="closeMdl('evMdl')">취소</button><button class="mbtn p" onclick="saveEv()">추가</button></div></div></div>
+<div class="mdl" id="ddMdl"><div class="mbox"><div class="mttl">D-Day 추가</div><div class="mr"><div class="ml">이름</div><input class="mi2" id="mDdTit" placeholder="예: 보고서 제출"></div><div class="mr"><div class="ml">날짜</div><input class="mi2" type="date" id="mDdDt"></div><div class="mbtns"><button class="mbtn" onclick="closeMdl('ddMdl')">취소</button><button class="mbtn p" onclick="saveDd()">추가</button></div></div></div>
+<div class="mdl" id="vacMdl"><div class="mbox"><div class="mttl">휴가 신청</div><div class="mr"><div class="ml">종류</div><select class="mi2"><option>연차</option><option>반차(오전)</option><option>반차(오후)</option><option>병가</option></select></div><div class="mr"><div class="ml">시작일</div><input class="mi2" type="date"></div><div class="mr"><div class="ml">종료일</div><input class="mi2" type="date"></div><div class="mr"><div class="ml">사유</div><input class="mi2" placeholder="사유 입력"></div><div class="mbtns"><button class="mbtn" onclick="closeMdl('vacMdl')">취소</button><button class="mbtn p" onclick="alert('신청 완료');closeMdl('vacMdl')">신청</button></div></div></div>
+<div class="mdl" id="tripMdl"><div class="mbox"><div class="mttl">출장 신청</div><div class="mr"><div class="ml">출장지</div><input class="mi2" placeholder="목적지"></div><div class="mr"><div class="ml">목적</div><input class="mi2" placeholder="출장 목적"></div><div class="mr"><div class="ml">출발일</div><input class="mi2" type="date"></div><div class="mr"><div class="ml">귀환일</div><input class="mi2" type="date"></div><div class="mbtns"><button class="mbtn" onclick="closeMdl('tripMdl')">취소</button><button class="mbtn p" onclick="alert('출장 신청 완료');closeMdl('tripMdl')">신청</button></div></div></div>
+<div class="mdl" id="supMdl"><div class="mbox"><div class="mttl">비품 발주</div><div class="mr"><div class="ml">품목</div><input class="mi2" placeholder="비품 이름"></div><div class="mr"><div class="ml">수량</div><input class="mi2" type="number" placeholder="0"></div><div class="mr"><div class="ml">긴급 여부</div><select class="mi2"><option>일반</option><option>긴급</option></select></div><div class="mbtns"><button class="mbtn" onclick="closeMdl('supMdl')">취소</button><button class="mbtn p" onclick="alert('발주 접수 완료');closeMdl('supMdl')">신청</button></div></div></div>
+<div class="mdl" id="roomMdl"><div class="mbox"><div class="mttl">회의실 예약</div><div class="mr"><div class="ml">회의실</div><select class="mi2"><option>소회의실 A</option><option>대회의실 B</option><option>화상회의실</option></select></div><div class="mr"><div class="ml">날짜</div><input class="mi2" type="date"></div><div class="mr"><div class="ml">시간</div><select class="mi2"><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option></select></div><div class="mr"><div class="ml">회의 제목</div><input class="mi2" placeholder="목적"></div><div class="mbtns"><button class="mbtn" onclick="closeMdl('roomMdl')">취소</button><button class="mbtn p" onclick="alert('예약 완료');closeMdl('roomMdl')">예약</button></div></div></div>
+
+<script>
+// ══ 데이터 ══
+let todos = JSON.parse(localStorage.getItem('bf_td')||'null') || [
+  {id:1,title:'예산 보고서 작성',u:5,i:5,dl:2,st:'긴급',done:false},
+  {id:2,title:'계약서 검토 및 날인',u:5,i:5,dl:1,st:'긴급',done:false},
+  {id:3,title:'직원 교육훈련 조율',u:4,i:4,dl:7,st:'지연',done:false},
+  {id:4,title:'부서 회의 자료 준비',u:3,i:4,dl:5,st:'진행중',done:false},
+  {id:5,title:'비품 발주 승인 요청',u:3,i:2,dl:10,st:'진행중',done:false},
+  {id:6,title:'출장 정산서 제출',u:2,i:2,dl:14,st:'진행중',done:true},
+];
+let events = JSON.parse(localStorage.getItem('bf_ev')||'null') || [
+  {id:1,title:'부서장 보고',date:'2026-05-20',cat:'team'},
+  {id:2,title:'협력사 미팅',date:'2026-05-25',cat:'external'},
+  {id:3,title:'직원 교육',date:'2026-05-29',cat:'team'},
+  {id:4,title:'예산 제출 마감',date:'2026-05-20',cat:'personal'},
+];
+let ddays = JSON.parse(localStorage.getItem('bf_dd')||'null') || [
+  {id:1,title:'6월 성과보고서',date:'2026-06-05'},
+  {id:2,title:'상반기 예산 마감',date:'2026-06-30'},
+  {id:3,title:'팀 워크숍',date:'2026-05-29'},
+  {id:4,title:'정기 감사',date:'2026-07-15'},
+  {id:5,title:'하반기 목표설정',date:'2026-08-31'},
+];
+let calBase = new Date(2026,4,1);
+
+// ══ 유틸 ══
+function go(id){ document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'}); }
+function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+function today(){ return new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'}); }
+
+function tick(){
+  const n=new Date();
+  document.getElementById('clk').textContent=n.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(tick,1000); tick();
+
+function toggleTheme(){
+  document.body.classList.toggle('lm');
+  document.getElementById('tbtn').textContent=document.body.classList.contains('lm')?'🌙 다크':'☀ 라이트';
+}
+function toggleNotif(){
+  const p=document.getElementById('notifPanel');
+  p.style.display=p.style.display==='block'?'none':'block';
+}
+document.addEventListener('click',e=>{
+  const p=document.getElementById('notifPanel');
+  if(p&&p.style.display==='block'&&!p.contains(e.target)&&!e.target.closest('.nb')) p.style.display='none';
+});
+
+// ══ 모달 ══
+function openMdl(id){ document.getElementById(id).classList.add('op'); }
+function closeMdl(id){ document.getElementById(id).classList.remove('op'); }
+document.querySelectorAll('.mdl').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('op'); }));
+
+// ══ TODO ══
+function scoreT(t){ const d=Math.max(0,Math.min(5,6-Math.min(t.dl,5))); return(t.u*.4+t.i*.4+d*.2).toFixed(1); }
+function renderTodos(){
+  document.getElementById('tdList').innerHTML=[...todos].sort((a,b)=>scoreT(b)-scoreT(a)).map(t=>`
+    <div class="ti">
+      <div class="tc ${t.done?'ok':''}" data-id="${t.id}"></div>
+      <div style="flex:1">
+        <div class="tt ${t.done?'dk':''}">${t.title}</div>
+        <div class="tm">
+          <span class="tg ${t.st==='긴급'?'ug':t.st==='지연'?'dl':t.st==='완료'?'dn2':'pr'}">${t.st}</span>
+          ${t.dl<=3&&!t.done?`<span class="tg ug">D-${t.dl}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+        <span style="font-size:9px;color:var(--t3)">점수 ${scoreT(t)}</span>
+        <span style="font-size:9px;color:var(--red);cursor:pointer" data-del="${t.id}">삭제</span>
+      </div>
+    </div>`).join('');
+  const pend=todos.filter(x=>!x.done).length;
+  document.getElementById('tdBadge').textContent=pend;
+  document.getElementById('s-todo').textContent=pend;
+  document.getElementById('s-d1').textContent=todos.filter(x=>!x.done&&x.dl<=1).length;
+  save('bf_td',todos);
+}
+document.getElementById('tdList').addEventListener('click',e=>{
+  const chk=e.target.closest('.tc[data-id]');
+  if(chk){ const t=todos.find(x=>x.id==chk.dataset.id); if(t){t.done=!t.done;t.st=t.done?'완료':t.st==='완료'?'진행중':t.st;} renderTodos(); return; }
+  const del=e.target.closest('[data-del]');
+  if(del){ todos=todos.filter(x=>x.id!=del.dataset.del); renderTodos(); }
+});
+document.getElementById('tdInp').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.value.trim()){
+    todos.push({id:Date.now(),title:e.target.value.trim(),u:3,i:3,dl:7,st:'진행중',done:false});
+    e.target.value=''; renderTodos();
+  }
+});
+document.getElementById('tdDetailBtn').addEventListener('click',()=>openMdl('tdMdl'));
+document.getElementById('sortBtn').addEventListener('click',renderTodos);
+function saveTdModal(){
+  const t=document.getElementById('mTdTit').value.trim(); if(!t) return;
+  const dl=document.getElementById('mTdDt').value;
+  const d=dl?Math.ceil((new Date(dl)-new Date())/86400000):7;
+  todos.push({id:Date.now(),title:t,u:+document.getElementById('mTdUrg').value,i:+document.getElementById('mTdImp').value,dl:Math.max(0,d),st:document.getElementById('mTdSt').value,done:false});
+  closeMdl('tdMdl'); renderTodos();
+}
+
+// ══ 캘린더 ══
+function renderCal(){
+  const y=calBase.getFullYear(),m=calBase.getMonth();
+  document.getElementById('calMon').textContent=`${y}년 ${m+1}월`;
+  const first=new Date(y,m,1).getDay(),last=new Date(y,m+1,0).getDate(),today2=new Date();
+  let h='';
+  for(let i=0;i<first;i++) h+=`<div class="cd om">${new Date(y,m,0-first+i+1).getDate()}</div>`;
+  for(let d=1;d<=last;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isT=y===today2.getFullYear()&&m===today2.getMonth()&&d===today2.getDate();
+    const hasE=events.some(e=>e.date===ds);
+    h+=`<div class="cd ${isT?'td':''} ${hasE?'he':''}" data-date="${ds}">${d}</div>`;
+  }
+  document.getElementById('calCells').innerHTML=h;
+  const t2=new Date(); t2.setHours(0,0,0,0);
+  document.getElementById('evList').innerHTML=events.filter(e=>new Date(e.date)>=t2).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4).map(e=>{
+    const d=Math.ceil((new Date(e.date)-t2)/86400000);
+    const clr=e.cat==='personal'?'var(--blue)':e.cat==='team'?'var(--green)':'var(--yellow)';
+    return `<div class="evi"><div class="evd" style="background:${clr}"></div><span>${e.title}</span><span style="font-size:10px;color:var(--t2);margin-left:auto">${d===0?'오늘':d===1?'내일':`D-${d}`}</span></div>`;
+  }).join('');
+}
+document.getElementById('calCells').addEventListener('click',e=>{
+  const cd=e.target.closest('.cd[data-date]');
+  if(cd){ const ev=events.filter(x=>x.date===cd.dataset.date); if(ev.length) alert(`📅 ${cd.dataset.date}\n${ev.map(x=>'· '+x.title).join('\n')}`); }
+});
+document.getElementById('calPrev').addEventListener('click',()=>{ calBase=new Date(calBase.getFullYear(),calBase.getMonth()-1,1); renderCal(); });
+document.getElementById('calNext').addEventListener('click',()=>{ calBase=new Date(calBase.getFullYear(),calBase.getMonth()+1,1); renderCal(); });
+function saveEv(){
+  const t=document.getElementById('mEvTit').value.trim(); if(!t) return;
+  events.push({id:Date.now(),title:t,date:document.getElementById('mEvDt').value,cat:document.getElementById('mEvCat').value});
+  closeMdl('evMdl'); save('bf_ev',events); renderCal();
+}
+
+// ══ D-DAY ══
+function renderDdays(){
+  const today2=new Date(); today2.setHours(0,0,0,0);
+  document.getElementById('ddGrid').innerHTML=ddays.slice(0,6).map(d=>{
+    const diff=Math.ceil((new Date(d.date)-today2)/86400000);
+    return `<div class="ddc"><div class="ddt">${d.title}</div><div class="ddn ${diff<=7&&diff>=0?'urg':''}">D-${diff<0?'PAST':diff}</div><div class="dds">${d.date}</div></div>`;
+  }).join('');
+}
+function saveDd(){
+  const t=document.getElementById('mDdTit').value.trim(); if(!t) return;
+  ddays.push({id:Date.now(),title:t,date:document.getElementById('mDdDt').value});
+  closeMdl('ddMdl'); save('bf_dd',ddays); renderDdays();
+}
+
+// ══ KPI CHART ══
+function initChart(){
+  new Chart(document.getElementById('kpiChart').getContext('2d'),{
+    type:'line',
+    data:{labels:['6일전','5일전','4일전','3일전','2일전','어제','오늘'],datasets:[
+      {data:[65,68,70,67,72,71,73],borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,.08)',tension:.4,fill:true,pointRadius:2,borderWidth:1.5},
+      {data:[88,89,90,91,90,92,92],borderColor:'#34d399',backgroundColor:'transparent',tension:.4,pointRadius:2,borderWidth:1.5},
+      {data:[75,72,70,68,65,63,61],borderColor:'#f87171',backgroundColor:'transparent',tension:.4,borderDash:[3,2],pointRadius:2,borderWidth:1.5},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5b6186',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5b6186',font:{size:9}},min:50,max:100}}}
+  });
+}
+
+// ══ 법인카드 샘플 ══
+const CARD_SAMPLES={
+  month:{period_label:'2025년 1월',total_amount:3870000,total_count:28,avg_amount:138214,max_amount:680000,
+    top_items:[{name:'거래처 접대 (강남 한우집)',amount:680000,date:'1/14'},{name:'팀 회식',amount:420000,date:'1/31'},{name:'KTX 부산 출장',amount:312000,date:'1/22'},{name:'사무용품 구입',amount:287000,date:'1/08'},{name:'야근 택시비',amount:245000,date:'1/17'}],
+    categories:[{name:'접대·회식',amount:1340000},{name:'교통·출장',amount:890000},{name:'사무용품',amount:620000},{name:'식대',amount:480000},{name:'기타',amount:540000}],
+    trend:{labels:['1주','2주','3주','4주'],values:[640000,1120000,890000,1220000]},
+    insight:'📌 1월 총 387만원 중 접대·회식이 35%로 최대 비중.\n\n⚠️ 접대비 68만원 — 50만원 초과, 임원 결재 필요\n야근 택시비 24.5만원 — 월한도 20만원 초과\n\n💡 KTX→고속버스 전환 시 월 12만원 절감 가능\n\n✅ 준수율: 28건 중 26건 정상 (92.8%)'},
+  quarter:{period_label:'2025년 1분기',total_amount:11240000,total_count:87,avg_amount:129195,max_amount:980000,
+    top_items:[{name:'신년 거래처 만찬',amount:980000,date:'1/06'},{name:'분기 팀빌딩',amount:750000,date:'3/28'},{name:'부산 출장 2박',amount:680000,date:'2/15'},{name:'컨퍼런스 참가비',amount:550000,date:'3/05'},{name:'사무기기 구입',amount:490000,date:'2/03'}],
+    categories:[{name:'접대·회식',amount:3850000},{name:'교통·출장',amount:2760000},{name:'사무용품',amount:1940000},{name:'식대',amount:1420000},{name:'교육·행사',amount:1270000}],
+    trend:{labels:['1월','2월','3월'],values:[3870000,3680000,3690000]},
+    insight:'📌 1분기 총 1,124만원 — 월평균 374만원 안정적.\n\n⚠️ 신년 만찬 98만원 — 임원 결재 확인 필요\n접대비 385만원 — 분기 한도(400만원)의 96.3%\n\n💡 택시 비중 38% → 대중교통 시 분기 40만원 절감\n\n✅ 준수율: 87건 중 82건 정상 (94.3%)'},
+  year:{period_label:'2024년 연간',total_amount:47820000,total_count:364,avg_amount:131374,max_amount:1850000,
+    top_items:[{name:'연말 고객 감사 만찬',amount:1850000,date:'12/20'},{name:'해외 출장 도쿄',amount:1420000,date:'9/10'},{name:'워크숍 (제주)',amount:1280000,date:'7/22'},{name:'사무환경 개선',amount:980000,date:'3/15'},{name:'상반기 성과 포상',amount:870000,date:'6/30'}],
+    categories:[{name:'접대·회식',amount:15240000},{name:'교통·출장',amount:12180000},{name:'사무용품',amount:7650000},{name:'식대',amount:6920000},{name:'교육·행사',amount:5830000}],
+    trend:{labels:['1Q','2Q','3Q','4Q'],values:[11240000,11680000,13420000,11480000]},
+    insight:'📌 연간 4,782만원 — 3분기 최대 (워크숍·해외출장 집중)\n\n⚠️ 접대비 1,524만원 — 예산 대비 107.3% 초과\n연말 만찬 185만원 — 단건 최고액\n\n💡 법인차량 활용 시 연간 200만원 절감 가능\n\n✅ 준수율: 364건 중 339건 정상 (93.1%)'}
+};
+let cardCharts={};
+const CC=['#4f8ef7','#34d399','#fbbf24','#f87171','#a78bfa','#22d3ee','#fb923c','#ec4899'];
+function fmtW(n,s=false){if(!n&&n!==0)return'-';if(s){if(n>=100000000)return Math.round(n/100000000)+'억';if(n>=10000)return Math.round(n/10000)+'만';return n.toLocaleString();}return n.toLocaleString('ko-KR')+'원';}
+function loadSample(){ renderCardResults(CARD_SAMPLES[document.getElementById('cardPeriod').value]); }
+function renderCardResults(d){
+  document.getElementById('cTotalAmt').textContent=fmtW(d.total_amount);
+  document.getElementById('cTotalCnt').textContent=(d.total_count||0)+'건';
+  document.getElementById('cAvgAmt').textContent=fmtW(d.avg_amount);
+  document.getElementById('cMaxAmt').textContent=fmtW(d.max_amount);
+  document.getElementById('cTopList').innerHTML='<div style="font-size:10px;color:var(--t3);margin-bottom:6px;font-weight:500">📋 TOP 지출 항목</div>'+(d.top_items||[]).slice(0,5).map((t,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)"><span style="font-size:11px;font-weight:700;color:var(--t3);min-width:18px;text-align:center">${i+1}</span><span style="flex:1;font-size:12px">${t.name}</span><span style="font-size:10px;color:var(--t3)">${t.date||''}</span><span style="font-size:12px;font-weight:600;color:var(--blue)">${fmtW(t.amount)}</span></div>`).join('');
+  const cats=d.categories||[];
+  if(cardCharts.cat)cardCharts.cat.destroy();
+  cardCharts.cat=new Chart(document.getElementById('cardCatChart').getContext('2d'),{type:'doughnut',data:{labels:cats.map(c=>c.name),datasets:[{data:cats.map(c=>c.amount),backgroundColor:CC,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmtW(ctx.raw)}`}}}}});
+  const total=cats.reduce((s,c)=>s+c.amount,0);
+  document.getElementById('catLegend').innerHTML=cats.map((c,i)=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:${CC[i%CC.length]};flex-shrink:0"></span>${c.name} ${total>0?Math.round(c.amount/total*100):0}%</span>`).join('');
+  const tr=d.trend||{labels:[],values:[]};
+  if(cardCharts.trend)cardCharts.trend.destroy();
+  cardCharts.trend=new Chart(document.getElementById('cardTrendChart').getContext('2d'),{type:'bar',data:{labels:tr.labels,datasets:[{data:tr.values,backgroundColor:CC.slice(0,tr.values.length),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmtW(ctx.raw)}}},scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5b6186',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5b6186',font:{size:9},callback:v=>fmtW(v,true)}}}}});
+  document.getElementById('cardInsightBox').textContent=d.insight||'';
+  showCardTab('sum',document.getElementById('tab-sum'));
+}
+function showCardTab(name,btn){
+  ['sum','cat','trend','insight'].forEach(t=>{document.getElementById(`tab-${t}-panel`).style.display=t===name?'block':'none';document.getElementById(`tab-${t}`)?.classList.remove('on');});
+  btn.classList.add('on');
+}
+document.getElementById('cardPeriod').addEventListener('change',loadSample);
+
+// ══ 결재 문서 템플릿 ══
+const DOC_TPLS={
+  '기안서':{fields:['기안자','부서','직위','기안일','제목','기안 내용','기대 효과','소요 예산'],gen:(f)=>`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n            기  안  서\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n▪ 기 안 자 : ${f['기안자']}  (${f['부서']} / ${f['직위']})\n▪ 기 안 일 : ${f['기안일']||today()}\n▪ 제    목 : ${f['제목']}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n1. 기안 내용\n\n   ${f['기안 내용']}\n\n2. 기대 효과\n\n   ${f['기대 효과']}\n\n3. 소요 예산\n\n   ${f['소요 예산']}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n결재: 담당 (        )  팀장 (        )  부서장 (        )\n━━━━━━━━━━━━━━━━━━━━━━━━━━━`},
+  '품의서':{fields:['기안자','부서','품의일','품의 제목','품의 내용','금액','집행 계획'],gen:(f)=>`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n            품  의  서\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n▪ 기 안 자 : ${f['기안자']}  (${f['부서']})\n▪ 품 의 일 : ${f['품의일']||today()}\n▪ 품의 제목 : ${f['품의 제목']}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n1. 품의 내용\n\n   ${f['품의 내용']}\n\n2. 금    액 : ${f['금액']}원\n\n3. 집행 계획\n\n   ${f['집행 계획']}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n결재: 담당 (        )  팀장 (        )  부서장 (        )\n━━━━━━━━━━━━━━━━━━━━━━━━━━━`},
+  '출장신청서':{fields:['신청자','부서','출장지','출발일','귀환일','출장 목적','예상 경비','동행자'],gen:(f)=>`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n          출 장 신 청 서\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n▪ 신 청 자 : ${f['신청자']}  (${f['부서']})\n▪ 출 장 지 : ${f['출장지']}\n▪ 출 발 일 : ${f['출발일']}\n▪ 귀 환 일 : ${f['귀환일']}\n▪ 동 행 자 : ${f['동행자']||'없음'}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n1. 출장 목적\n\n   ${f['출장 목적']}\n\n2. 예상 경비 : ${f['예상 경비']}원\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n결재: 담당 (        )  팀장 (        )  부서장 (        )\n━━━━━━━━━━━━━━━━━━━━━━━━━━━`},
+  '휴가신청서':{fields:['신청자','부서','직위','휴가 종류','시작일','종료일','사유','인수인계자'],gen:(f)=>`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n          휴 가 신 청 서\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n▪ 신 청 자 : ${f['신청자']}  (${f['부서']} / ${f['직위']})\n▪ 휴가 종류 : ${f['휴가 종류']}\n▪ 시 작 일 : ${f['시작일']}\n▪ 종 료 일 : ${f['종료일']}\n▪ 인수인계자 : ${f['인수인계자']||'없음'}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n1. 휴가 사유\n\n   ${f['사유']}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n결재: 담당 (        )  팀장 (        )  부서장 (        )\n━━━━━━━━━━━━━━━━━━━━━━━━━━━`},
+  '비품신청서':{fields:['신청자','부서','신청일','품목명','수량','단가(원)','사용 목적','긴급 여부'],gen:(f)=>`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n          비 품 신 청 서\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n▪ 신 청 자 : ${f['신청자']}  (${f['부서']})\n▪ 신 청 일 : ${f['신청일']||today()}\n▪ 긴급 여부 : ${f['긴급 여부']||'일반'}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n▪ 품 목 명 : ${f['품목명']}\n▪ 수    량 : ${f['수량']}개\n▪ 단    가 : ${f['단가(원)']}원\n▪ 합    계 : ${(+f['수량']||0)*(+f['단가(원)']||0)}원\n\n1. 사용 목적\n\n   ${f['사용 목적']}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n결재: 담당 (        )  팀장 (        )  부서장 (        )\n━━━━━━━━━━━━━━━━━━━━━━━━━━━`},
+};
+let curDocTpl='기안서';
+function selectDocTpl(name,btn){
+  curDocTpl=name;
+  document.querySelectorAll('.doc-tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const tpl=DOC_TPLS[name];
+  document.getElementById('docForm').innerHTML=tpl.fields.map(f=>`<div><div class="ml">${f}</div><input class="mi2 doc-f" data-f="${f}" placeholder="${f}" oninput="renderDocPrev()"></div>`).join('');
+  renderDocPrev();
+  document.getElementById('docCopyBtn').style.display='block';
+  document.getElementById('docPrintBtn').style.display='block';
+}
+function renderDocPrev(){
+  const f={};
+  document.querySelectorAll('.doc-f').forEach(el=>f[el.dataset.f]=el.value||el.placeholder);
+  document.getElementById('docPreview').textContent=DOC_TPLS[curDocTpl].gen(f);
+}
+function copyDoc(){
+  navigator.clipboard.writeText(document.getElementById('docPreview').textContent);
+  const b=document.getElementById('docCopyBtn'); b.textContent='✓ 복사됨'; setTimeout(()=>b.textContent='📋 복사',1500);
+}
+function printDoc(){
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>${curDocTpl}</title><style>body{font-family:'Noto Sans KR',sans-serif;font-size:13px;padding:40px;white-space:pre-wrap;line-height:1.9;}</style></head><body>${document.getElementById('docPreview').textContent}</body></html>`);
+  w.document.close(); w.print();
+}
+
+// ══ 사내 규정 ══
+const RULES=[
+  {tag:'연차',cls:'rt2',title:'연차 휴가 부여 기준',body:'• 1년 미만: 매월 1일씩 최대 11일\n• 1년 이상: 15일 (근속 2년마다 1일 가산, 최대 25일)\n• 미사용 연차: 연말 소멸\n• 신청: 사용 3일 전 팀장 승인 원칙'},
+  {tag:'출장',cls:'rt3',title:'국내 출장 경비 처리 기준',body:'• 교통비: 실비 정산 (KTX 일반실 / 고속버스)\n• 숙박비: 1박 80,000원 한도\n• 식비: 일 30,000원 한도\n• 출장신청서: 출발 전 팀장 결재 필수\n• 정산: 귀환 후 5영업일 이내'},
+  {tag:'법인카드',cls:'rt5',title:'법인카드 사용 규정',body:'• 업무 관련 지출에 한함\n• 접대비 단건 50만원 한도 (초과 시 임원 사전 결재)\n• 사적 사용 금지 (전액 변상 및 징계)\n• 영수증: 사용 후 3영업일 이내 제출'},
+  {tag:'경비',cls:'rt3',title:'업무 경비 처리 절차',body:'• 10만원 이상: 품의서 결재 후 지출\n• 영수증 + 지출결의서 제출\n• 정산: 지출 후 7영업일 이내\n• 법인카드 우선 사용 원칙'},
+  {tag:'복무',cls:'rt1',title:'근무 시간 및 복무 기준',body:'• 표준 근무: 09:00~18:00 (점심 1시간)\n• 유연근무: 팀장 승인 시 07:00~10:00 출근 조정\n• 지각: 월 3회 이상 시 경위서\n• 무단결근: 일급 공제 및 경고'},
+  {tag:'복무',cls:'rt1',title:'재택근무 운영 기준',body:'• 신청: 전주 금요일까지 팀장 승인\n• 주 최대 2일\n• 근무 시간 동일 (09:00~18:00)\n• 회의·보고 시 출근 전환'},
+  {tag:'교육',cls:'rt4',title:'직원 교육훈련 지원 기준',body:'• 연간 의무교육: 성희롱예방·개인정보보호·안전교육\n• 외부교육: 연 1회 50만원 한도 지원\n• 자격증 응시료: 업무 관련 전액 지원\n• 교육 후 결과 보고서 제출 필수'},
+  {tag:'비품',cls:'rt2',title:'비품 구매 및 관리 기준',body:'• 10만원 미만: 팀장 승인 후 총무팀 신청\n• 10만원 이상: 품의서 결재 후 구매\n• 50만원 이상: 자산 번호 부여\n• 개인 사용 목적 구매 불가'},
+  {tag:'개인정보',cls:'rt5',title:'개인정보 처리 및 보호 기준',body:'• 개인정보 외부 유출 금지\n• 업무용 PC 이외 저장 금지\n• 이메일 수신자 확인 필수\n• 퇴직 시 업무 자료 일체 반납'},
+];
+let ruleFilter='all';
+function renderRules(kw=''){
+  const k=kw.toLowerCase();
+  const cats=['all','연차','출장','법인카드','경비','복무','교육','비품','개인정보'];
+  document.getElementById('ruleCats').innerHTML=cats.map(c=>`<button class="doc-tab ${c===ruleFilter?'on':''}" style="font-size:10px;padding:2px 9px;" onclick="ruleFilter='${c}';renderRules(document.getElementById('ruleInp').value)">${c==='all'?'전체':c}</button>`).join('');
+  const list=RULES.filter(r=>(!k||r.title.includes(k)||r.body.includes(k)||r.tag.includes(k))&&(ruleFilter==='all'||r.tag===ruleFilter));
+  document.getElementById('ruleList').innerHTML=list.length
+    ?list.map(r=>`<div class="rule-card" onclick="this.classList.toggle('open')"><div style="display:flex;align-items:center;gap:6px"><span class="rtag ${r.cls}">${r.tag}</span><span class="rule-title">${r.title}</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">▾</span></div><div class="rule-body">${r.body}</div></div>`).join('')
+    :`<div style="text-align:center;padding:20px;font-size:12px;color:var(--t3)">검색 결과 없음</div>`;
+}
+document.getElementById('ruleInp').addEventListener('input',e=>renderRules(e.target.value));
+
+// ══ 주간업무계획서 ══
+function genWeekly(){
+  const now=new Date();
+  const mon=new Date(now); mon.setDate(now.getDate()-(now.getDay()||7)+1);
+  const fri=new Date(mon); fri.setDate(mon.getDate()+4);
+  const fmt=d=>d.toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'});
+  const pend=todos.filter(t=>!t.done);
+  const urg=pend.filter(t=>t.st==='긴급'||t.dl<=2);
+  const norm=pend.filter(t=>t.st!=='긴급'&&t.dl>2);
+  const done=todos.filter(t=>t.done);
+  const extra=document.getElementById('weeklyExtra').value.trim();
+  document.getElementById('weeklyOut').textContent=`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n       주 간 업 무 계 획 서\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n▪ 작 성 자 : 김민준  (경영지원팀)\n▪ 기    간 : ${fmt(mon)} ~ ${fmt(fri)}\n▪ 작 성 일 : ${today()}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n1. 긴급·마감 임박 업무${urg.length?` (${urg.length}건)`:''}\n${urg.length?urg.map(t=>`   • [${t.st}] ${t.title}  (D-${t.dl})`).join('\n'):'   • 해당 없음'}\n\n2. 이번 주 주요 업무${norm.length?` (${norm.length}건)`:''}\n${norm.length?norm.map(t=>`   • ${t.title}  (${t.st})`).join('\n'):'   • 해당 없음'}\n\n3. 지난 주 완료 업무${done.length?` (${done.length}건)`:''}\n${done.length?done.map(t=>`   • ${t.title}  ✓`).join('\n'):'   • 해당 없음'}\n${extra?`\n4. 특이사항 / 기타\n   ${extra.replace(/\n/g,'\n   ')}\n`:''}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nKPI: 완료율 73% | 품질 92점 | SLA 61%\n━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+}
+function copyWeekly(){
+  const t=document.getElementById('weeklyOut').textContent;
+  if(!t.trim()){alert('먼저 자동 생성 버튼을 눌러주세요.');return;}
+  navigator.clipboard.writeText(t);
+  const b=document.getElementById('wCopyBtn'); b.textContent='✓ 복사됨'; setTimeout(()=>b.textContent='📋 복사',1500);
+}
+
+// ══ 빠른 메모 FAB ══
+let quickMemos=JSON.parse(localStorage.getItem('bf_qm')||'[]');
+function toggleFab(){
+  const p=document.getElementById('chatFabPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')){ renderQuickMemos(); document.getElementById('quickMemoInp').focus(); }
+}
+function renderQuickMemos(){
+  document.getElementById('quickMemoList').innerHTML=quickMemos.length
+    ?[...quickMemos].reverse().map((m,i)=>`<div class="pm b" style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;max-width:100%"><span style="flex:1;font-size:11px">${m.text}</span><div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0"><span style="font-size:9px;color:var(--t3)">${m.time}</span><span style="font-size:9px;color:var(--red);cursor:pointer" onclick="delMemo(${quickMemos.length-1-i})">삭제</span></div></div>`).join('')
+    :`<div class="pm b" style="color:var(--t3);font-style:italic">메모가 없습니다. 아래에 입력해보세요!</div>`;
+  document.getElementById('quickMemoList').scrollTop=9999;
+}
+function addQuickMemo(){
+  const inp=document.getElementById('quickMemoInp');
+  if(!inp.value.trim()) return;
+  quickMemos.push({text:inp.value.trim(),time:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});
+  inp.value=''; save('bf_qm',quickMemos); renderQuickMemos();
+}
+function delMemo(i){ quickMemos.splice(i,1); save('bf_qm',quickMemos); renderQuickMemos(); }
+
+// ══ INIT ══
+renderTodos(); renderCal(); renderDdays(); initChart(); loadSample();
+selectDocTpl('기안서',document.querySelector('.doc-tab'));
+renderRules();
+genWeekly();
+if(window.innerWidth<=1100) document.getElementById('sbtog').style.display='block';
+window.addEventListener('resize',()=>{ document.getElementById('sbtog').style.display=window.innerWidth<=1100?'block':'none'; });
+</script>
+</body>
+</html>
